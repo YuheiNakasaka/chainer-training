@@ -21,6 +21,7 @@ window.onload = function() {
   }
 
   function onMouseDown(event){
+    clearCan();
     ox=event.clientX-event.target.getBoundingClientRect().left;
     oy=event.clientY-event.target.getBoundingClientRect().top ;
     mf=true;
@@ -52,7 +53,8 @@ window.onload = function() {
   function clearCan(){
     ct.fillStyle="rgb(255,255,255)";
     ct.fillRect(0,0,can.getBoundingClientRect().width,can.getBoundingClientRect().height);
-    $('#result h3').empty()
+    $('.result p').text('');
+    $('.result').removeClass('highlight');
   }
 
   function predict() {
@@ -71,7 +73,6 @@ window.onload = function() {
           for (var j = 0; j < 28; j++) {
               var n = 4 * (i * 28 + j);
               inputs[i * 28 + j] = (data[n + 0] + data[n + 1] + data[n + 2]) / 3;
-              console.log((data[n + 0] + data[n + 1] + data[n + 2]) / 3);
           }
       }
       if (Math.min(...inputs) === 255) {
@@ -84,10 +85,23 @@ window.onload = function() {
         data: JSON.stringify(inputs),
         success: function(data){
           console.log(data);
-          pred_all = JSON.parse(data["pred_all"]);
-          for (var i = 0; i < pred_all.length; i++) {
-            var pred = Math.round(pred_all[i]);
-            $(".result."+i+" p").text(pred + "%");
+          var pred_all_mlp = JSON.parse(data["pred_all_mlp"]);
+          for (var i = 0; i < pred_all_mlp.length; i++) {
+            var pred = Math.round(pred_all_mlp[i]);
+            $("#result.mlp .result."+i+" p").text(pred + "%");
+            if (parseInt(data["pred_mlp"]) == i) {
+              $("#result.mlp .result."+i).addClass('highlight');
+            }
+          }
+
+          var max_cnn_idx = 0;
+          var pred_all_cnn = JSON.parse(data["pred_all_cnn"]);
+          for (var i = 0; i < pred_all_cnn.length; i++) {
+            var pred = Math.round(pred_all_cnn[i]);
+            $("#result.cnn .result."+i+" p").text(pred + "%");
+            if (parseInt(data["pred_cnn"]) == i) {
+              $("#result.cnn .result."+i).addClass('highlight');
+            }
           }
         }
       });

@@ -22,6 +22,10 @@
       margin: 0 0 0 20px;
       float: left;
     }
+    #result h1 {
+      font-size: 18px;
+      margin: 0 0 10px 0;
+    }
     #result h2 {
       margin: 0;
       display: inline-block;
@@ -30,6 +34,9 @@
     #result p {
       margin: 0;
       display: inline-block;
+    }
+    .result.highlight {
+      background-color: #0ff;
     }
     #buttons {
       clear: both;
@@ -42,7 +49,51 @@
     <div id="wrap">
       <canvas id="can" width="400" height="400"></canvas>
     </div>
-    <div id="result">
+    <div id="result" class="mlp">
+      <h1>MLP</h1>
+      <div class="result 0">
+        <h2>0</h2>
+        <p></p>
+      </div>
+      <div class="result 1">
+        <h2>1</h2>
+        <p></p>
+      </div>
+      <div class="result 2">
+        <h2>2</h2>
+        <p></p>
+      </div>
+      <div class="result 3">
+        <h2>3</h2>
+        <p></p>
+      </div>
+      <div class="result 4">
+        <h2>4</h2>
+        <p></p>
+      </div>
+      <div class="result 5">
+        <h2>5</h2>
+        <p></p>
+      </div>
+      <div class="result 6">
+        <h2>6</h2>
+        <p></p>
+      </div>
+      <div class="result 7">
+        <h2>7</h2>
+        <p></p>
+      </div>
+      <div class="result 8">
+        <h2>8</h2>
+        <p></p>
+      </div>
+      <div class="result 9">
+        <h2>9</h2>
+        <p></p>
+      </div>
+    </div>
+    <div id="result" class="cnn">
+      <h1>CNN</h1>
       <div class="result 0">
         <h2>0</h2>
         <p></p>

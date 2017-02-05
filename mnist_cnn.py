@@ -1,3 +1,4 @@
+import argparse
 import chainer
 import chainer.functions as F
 import chainer.links as L
@@ -25,7 +26,18 @@ class MnistCNNModel(chainer.Chain):
         return self.fc4(h)
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Chainer CNN MNIST')
+    parser.add_argument('--gpu', '-g', type=int, default=-1, help='GPU ID (negative value indicates CPU)')
+    args = parser.parse_args()
+
+    # if set --gpu 1, use gpu
+    device = -1
     model = L.Classifier(MnistCNNModel())
+    if args.gpu > 0:
+        device = 0
+        chainer.cuda.get_device(0).use()
+        model.to_gpu()
+
     optimizer = chainer.optimizers.MomentumSGD(lr=0.01, momentum=0.9)
     optimizer.setup(model)
 
@@ -37,10 +49,9 @@ if __name__ == '__main__':
 
     # 訓練
     # ref) http://docs.chainer.org/en/stable/reference/core/training.html
-    updater = training.StandardUpdater(train_iter, optimizer, device=-1)
-    trainer = training.Trainer(updater, (100, 'epoch'), out="result")
-    trainer.extend(extensions.Evaluator(test_iter, model, device=-1))
-    trainer.extend(extensions.snapshot(), trigger=(100, 'epoch'))
+    updater = training.StandardUpdater(train_iter, optimizer, device=device)
+    trainer = training.Trainer(updater, (10, 'epoch'), out="result")
+    trainer.extend(extensions.Evaluator(test_iter, model, device=device))
     trainer.extend(extensions.LogReport())
     trainer.extend(extensions.PrintReport( ['epoch', 'main/loss', 'validation/main/loss', 'main/accuracy', 'validation/main/accuracy']))
     trainer.extend(extensions.ProgressBar())
@@ -48,5 +59,7 @@ if __name__ == '__main__':
     trainer.run()
 
     # 訓練結果の保存
+    if args.gpu > 0:
+        model.to_cpu()
     chainer.serializers.save_npz('./output/model_cnn_final', model)
     chainer.serializers.save_npz('./output/optimizer_cnn_final', optimizer)
