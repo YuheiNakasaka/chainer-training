@@ -1,8 +1,7 @@
 import argparse
-import six
 import numpy as np
 import chainer
-from chainer import Function, gradient_check, report, training, utils, Variable
+from chainer import cuda, Function, gradient_check, report, training, utils, Variable
 from chainer import datasets, iterators, optimizers, serializers, reporter
 from chainer import Link, Chain, ChainList
 from chainer.dataset import convert
@@ -78,9 +77,13 @@ class GAN_Updater(training.StandardUpdater):
 
         # create input z as random
         batchsize = true_x.shape[0]
-        z = np.random.uniform(-1, 1, (batchsize, self.z_dim, 1, 1))
-        z = z.astype(dtype=np.float32)
-        z = Variable(z)
+        if self.device == 0:
+            z = cuda.cupy.random.normal(size=(batchsize, self.z_dim, 1, 1), dtype=np.float32)
+            z = Variable(z)
+        else:
+            z = np.random.uniform(-1, 1, (batchsize, self.z_dim, 1, 1))
+            z = z.astype(dtype=np.float32)
+            z = Variable(z)
 
         # G        -> x1                    ->  y of gen
         #              + -> X -> D -> split
@@ -107,28 +110,45 @@ class GAN_Updater(training.StandardUpdater):
 
         reporter.report({'loss':loss, 'gen/loss':loss_gen / batchsize, 'dis/loss':loss_data / batchsize})
 
-        save_image(gen_output, self.epoch)
+        save_image(gen_output, self.epoch, self.device)
 
 # 生成される200枚のうち15x15の数字画像195枚を1枚にまとめて出力する
-def save_image(x_gen, epoch):
-    x_gen_img = x_gen.data
+def save_image(x_gen, epoch, device):
+    if device == 0:
+        x_gen_img = cuda.to_cpu(x_gen.data)
+    else:
+        x_gen_img = x_gen.data
+
     n = x_gen_img.shape[0] # (200, 1, 28, 28)
     n = n // 15 * 15 # 195
     x_gen_img = x_gen_img[:n] # (195, 1, 28, 28)
     x_gen_img = x_gen_img.reshape(15, -1, 28, 28) # (15, 13, 28, 28)
     x_gen_img = x_gen_img.transpose(1, 2, 0, 3) # (13, 28, 15, 28)
     x_gen_img = x_gen_img.reshape(-1, 15 * 28) # (364, 420)
-    imsave("./output/x_gen_{}.png".format(epoch), x_gen_img)
+    imsave("./output/device{}_x_gen_{}.png".format(device, epoch), x_gen_img)
 
 def main():
+    parser = argparse.ArgumentParser(description='DCGAN_MNIST')
+    parser.add_argument('--batchsize', '-b', type=int, default=200, help='Number of the mini batch')
+    parser.add_argument('--epoch', '-e', type=int, default=20, help='Number of the training epoch')
+    parser.add_argument('--gpu', '-g', type=int, default=-1, help='If use GPU, then 0.(-1 is CPU)')
+    args = parser.parse_args()
+
     z_dim = 2
-    batch_size = 200
-    device = -1
-    epoch = 20
-    output = 'result'
+    batch_size = args.batchsize
+    epoch = args.epoch
+    device = args.gpu
+    output = "result{}".format(device)
+
+    print("GPU: {}".format(device))
+    print("BatchSize: {}".format(batch_size))
+    print("Epoch: {}".format(epoch))
 
     gen = Generator(z_dim)
     dis = Discriminator()
+    if device == 0:
+        gen.to_gpu()
+        dis.to_gpu()
 
     opt = {'gen': optimizers.Adam(alpha=-0.001, beta1=0.5),
            'dis': optimizers.Adam(alpha=0.001, beta1=0.5)}
